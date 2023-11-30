@@ -1,0 +1,32 @@
+network vis
+
+idea 1: shows if there is any change in trends of max deaths dues to any disease.
+(ex: 1990 india(max)- cardio, 2012 india(max)-alzymers)
+nodes: countries
+size: death number
+links: max deaths due to which disease (ex: india(cardio) -link- china(cardio))
+color: disease
+filter: year
+
+idea 2: free nodes shows which countries do not have that particular disease
+nodes: countries
+size: death number
+links: (ex: india(yes) -link- china(yes) -nolink- pakistan(no))
+color: disease
+filter: year, disease
+
+idea 3: if two diseases have similar causes or are influenced by similar factors
+(ex: diseas A might have a link only with B, saying if B is tried to be removed, A also wont exist)
+nodes: Diseases
+links: (ex: if india has diseas A and B in that year, A -link- B)
+size:death number(total deaths for that disease of all countries)
+color:?
+filter: year
+
+-------------------------------------------------------------------------------------------------------------------
+To do:
+world_map
+1. slider for years
+2. change color of world_map
+3. zoom and pan feature
+4. blink on start
