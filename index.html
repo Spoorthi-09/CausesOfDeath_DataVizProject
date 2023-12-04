@@ -254,68 +254,6 @@
                     //Initial map color coding
                     yearSelect.on("change", updateMap);
                     updateMap(); // Initialize the map with the default year
-
-                    // Define the SVG element for the legend
-                    const legend = svg.append("g")
-                        .attr("class", "legend")
-                        .attr("transform", "translate(20, 20)"); // Adjust the position of the legend
-
-                    // Calculate min and max total deaths in millions
-                    minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity) / 1000000;
-                    maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0) / 1000000;
-
-                    // Format the numbers in millions
-                    const formatNumber = d3.format(".1f"); // Display one decimal point
-                    const formattedMinDeaths = formatNumber(minTotalDeaths) + "M";
-                    const formattedMaxDeaths = formatNumber(maxTotalDeaths) + "M";
-
-                    // Append legend content to the legend container
-                    const legendContainer = d3.select(".legend-container");
-
-                    // Add minimum and maximum death labels to the legend container as text
-                    const legendText = legendContainer.append("div").attr("class", "legend-text");
-
-                    legendText.append("div")
-                        .text(`Min Deaths: ${formattedMinDeaths}`);
-
-                    legendText.append("div")
-                        .text(`Max Deaths: ${formattedMaxDeaths}`);
-
-                    // Create a gradient for the legend within the legend container using SVG
-                    const gradientWidth = 20; // Adjust the width of the color bar
-                    const gradientHeight = 300; // Adjust the height of the color bar
-
-                    const legendSvg = legendContainer.append("svg")
-                        .attr("class", "legend-svg")
-                        .attr("width", gradientWidth)
-                        .attr("height", gradientHeight);
-
-                    const legendGroup = legendSvg.append("g")
-                        .attr("class", "legend-group")
-                        .attr("transform", "translate(0, 20)"); // Adjust the vertical position of the color bar
-
-                    // Create a rectangle to display the gradient (color bar)
-                    legendGroup.append("rect")
-                        .attr("x", 0)
-                        .attr("y", 0)
-                        .attr("width", gradientWidth)
-                        .attr("height", gradientHeight - 20) // Adjust the height of the color bar
-                        .style("fill", "url(#gradient)");
-
-                    // Add color stops to the gradient
-                    const gradient = legendGroup.append("defs")
-                        .append("linearGradient")
-                        .attr("id", "gradient")
-                        .attr("x1", "0%")
-                        .attr("y1", "0%")
-                        .attr("x2", "0%")
-                        .attr("y2", "100%")
-                        .selectAll("stop")
-                        .data(colorScale.range())
-                        .enter().append("stop")
-                        .attr("offset", (d, i) => i / (colorScale.range().length - 1))
-                        .attr("stop-color", d => d);
-
                 });
             });
         </script>

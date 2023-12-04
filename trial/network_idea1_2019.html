@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Data Network Visualization</title>
+    <script src="libs/d3.js"></script>
+    <style>
+        svg {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+        line {
+            stroke-width: .3;
+        }
+        text {
+            font-family: sans-serif;
+            font-size: xx-small;
+        }
+        .inActive {
+            fill: rgb(216, 214, 214);
+        }
+        #detailsPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Creating SVG
+        const width = 1500;
+        const height = 3200;
+        let svg = d3.select("body").append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`);
+
+        // Creating side panel
+        let detailsPanel = d3.select("body").append("div")
+            .attr("id", "detailsPanel");
+
+        // Adding data to the page
+        d3.json("..\\data\\network_data_idea1_2019.json").then(data => {
+
+            // Node size with respect to degrees
+            let degrees = {};
+
+            data.links.forEach((link) => {
+                if (!degrees[link.source]) {
+                    degrees[link.source] = 0;
+                }
+                if (!degrees[link.target]) {
+                    degrees[link.target] = 0;
+                }
+
+                degrees[link.source]++;
+                degrees[link.target]++;
+            });
+
+            // Create a scale for node sizes based on degrees
+            const degreeExtent = d3.extent(Object.values(degrees), d => d);
+            const radiusScale = d3.scaleSqrt()
+                .domain(degreeExtent)
+                .range([10, 35]);
+
+            // Extract unique countries from the nodes
+            const uniqueDisease = Array.from(new Set(data.nodes.map(node => node.disease)));
+            console.log(uniqueDisease)
+
+            // Generate distinct colors based on countries
+            const dynamicColorScale = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, uniqueDisease.length))
+                .domain(uniqueDisease);
+
+            // Appending nodes and links to the canvas
+
+            // Creating a group canvas
+            let gCanvas = svg.append("g").attr("class", "canvas");
+
+            // Adding links
+            let gLinks = gCanvas.selectAll('.links')
+                .data(data.links)
+                .enter()
+                .append("line")
+                .attr("stroke", "black");
+
+            // Appending nodes
+            let gNodes = gCanvas.selectAll()
+                .data(data.nodes)
+                .enter()
+                .append('g');
+            let circles = gNodes.append('circle')
+                .attr("r", (d) => radiusScale(degrees[d.id]))
+                .attr("fill", d => dynamicColorScale(d.disease))
+                .attr("class", d => "g_" + d.disease)
+            gNodes.on("mouseenter", (m, d) => {
+                d3.selectAll("circle").classed("inActive", true)
+                d3.selectAll(".g_" + d.disease).classed("inActive", false)
+            })
+            gNodes.on("mouseleave", (m, d) => {
+                d3.selectAll("circle").classed("inActive", false)
+            })
+            gNodes.on("click", (event, d) => {
+                // Display details in the side panel on click
+                showNodeDetails(d);
+            });
+            gNodes.append("text")
+                .text(d => d.name)
+                .attr("text-anchor", "middle")
+                .attr("dy", (d) => {
+                    const radius = radiusScale(degrees[d.id]);
+                    const dyValue = isNaN(radius) ? 0 : -radius - 2;
+                    console.log("dyValue:", dyValue);
+                    return dyValue;
+                })
+
+            let fSim = d3.forceSimulation(data.nodes)
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('links', d3.forceLink(data.links)
+                    .id(d => d.id)
+                    .distance(50)
+                    .strength(.2))
+                .force('collide', d3.forceCollide()
+                    .radius((d) => radiusScale(degrees[d.id]) * 1.5)
+                    .iterations(2))
+                .force("charge", d3.forceManyBody().strength(-10))
+                .force("x", d3.forceX().strength(-0.001))
+                .force("y", d3.forceY().strength(-0.001))
+                .on('tick', update);
+            
+            function update() {
+                gNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                gLinks.attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+            }
+
+            svg.call(d3.zoom()
+                .extent([[0, 0], [width, height]])
+                .scaleExtent([1, 8])
+                .on("zoom", ({ transform }) => {
+                    gCanvas.attr("transform", transform)
+                }))
+
+            function showNodeDetails(node) {
+                detailsPanel.html(`
+                    <h2>${node.name}</h2>
+                    <p>Disease: ${node.disease}</p>
+                    <p>Deaths: ${node.deaths}</p>
+                `);
+            }
+
+        });
+
+    </script>
+</body>
+</html>
