@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Map with D3.js</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script> -->
     <style>
         body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0; /* Remove default margin */
-}
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            /* Remove default margin */
+        }
 
         path {
             fill: none;
@@ -36,30 +41,50 @@
             top: 20px;
             right: 20px;
         }
+
         .map-container {
-    position: relative;
-    width: 960px; /* Adjust this to match the SVG width */
-    height: 950px; /* Adjust this to match the SVG height */
-    margin-right: 50px; /* Provide space for the legend */
-}
-#play-pause-button {
+            position: relative;
+            width: 960px;
+            /* Adjust this to match the SVG width */
+            height: 950px;
+            /* Adjust this to match the SVG height */
+            margin-right: 50px;
+            /* Provide space for the legend */
+        }
+
+        #play-pause-button {
             padding: 8px 16px;
             margin-top: 10px;
         }
 
 
-/* Styles for the legend */
-.legend-container {
-    position: absolute;
-    justify-content: center;
-    top: 0;
-    right: 40px; /* Adjust the right position to place it outside the map container */
-    width: 50px; /* Adjust the width of the legend */
-    height: 100%; /* Set the height of the legend */
-    /* Additional styling for the legend */
-}
+        /* Styles for the legend */
+        .legend-container {
+            position: absolute;
+            justify-content: center;
+            top: 0;
+            right: 40px;
+            /* Adjust the right position to place it outside the map container */
+            width: 50px;
+            /* Adjust the width of the legend */
+            height: 100%;
+            /* Set the height of the legend */
+            /* Additional styling for the legend */
+        }
+
+        .control {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-secondary {
+            background-color: lightgray;
+            color: black;
+            border-color: transparent;
+        }
     </style>
 </head>
+
 <body>
     <div class="map-container">
         <svg id="world-map" width="960" height="950"></svg>
@@ -77,6 +102,10 @@
 
     <button id="play-pause-button">Play</button>
 
+    <div class="control">
+        <button name="change" id="btnSwitch" class="btn btn-secondary" style="width: 150px">Choropleth</button>
+    </div>
+
     <script>
         const svg = d3.select("#world-map");
         const yearSelect = d3.select("#year-select");
@@ -89,219 +118,237 @@
         //creating a path generator
         const path = d3.geoPath().projection(projection);
 
-        //to load and display the GeoJSON data
-        d3.json("world.geojson").then(function (worldData) {
-            //to load the CSV data
-            d3.csv("deaths_gdp_obesity_sorted.csv").then(function (csvData) {
-                //to get the unique years from the dataset
-                const years = [...new Set(csvData.map(d => d.Year))];
+        document.addEventListener("DOMContentLoaded", function () {
 
-                //populating the dropdown with years
-                yearSelect.selectAll("option")
-                    .data(years)
-                    .enter()
-                    .append("option")
-                    .attr("value", d => d)
-                    .text(d => d);
-
-                //setting the default value of the dropdown to "1990"
-                yearSelect.property("value", "1990");
-
-                let currentYearIndex = 0;
-
-                function updateMap(){
-                    const selectedYear = yearSelect.property("value");
-
-                    //defining a color scale for the selected year
-                    let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
-                    let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
-                    const colorScale = d3.scaleSequential(d3.interpolateViridis)
-                        .domain([0, maxTotalDeaths]);
-
-                    //updating the map color coding and returning none for countries with missing data
-                    svg.selectAll("path")
-                        .style("fill", function (d) {
-                            const countryName = d.properties.name;
-                            const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
-                            if (countryData) {
-                                return colorScale(+countryData.total_deaths);
-                            }
-                            return "none"; 
-                        });
-                    
-                }
-
-                //Function to update the map based on the selected year
-                function updateMap1(selectedYear) {
-                    // const selectedYear = yearSelect.property("value");
-                    console.log(selectedYear);
-
-                    //defining a color scale for the selected year
-                    let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
-                    let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
-                    const colorScale = d3.scaleSequential(d3.interpolateViridis)
-                        .domain([0, maxTotalDeaths]);
-                    
-                    // Define the SVG element for the legend
-// Define the SVG element for the legend
-// Define the SVG element for the legend
-// const legend = svg.append("g")
-//     .attr("class", "legend")
-//     .attr("transform", "translate(20, 20)"); // Adjust the position of the legend
-
-// // Calculate min and max total deaths in millions
-// minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity) / 1000000;
-// maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0) / 1000000;
-
-// // Format the numbers in millions
-// const formatNumber = d3.format(".1f"); // Display one decimal point
-// const formattedMinDeaths = formatNumber(minTotalDeaths) + "M";
-// const formattedMaxDeaths = formatNumber(maxTotalDeaths) + "M";
-
-// // Append legend content to the legend container
-// const legendContainer = d3.select(".legend-container");
-
-// // Add minimum and maximum death labels to the legend container as text
-// const legendText = legendContainer.append("div").attr("class", "legend-text");
-
-// legendText.append("div")
-//     .text(`Min Deaths: ${formattedMinDeaths}`);
-
-// legendText.append("div")
-//     .text(`Max Deaths: ${formattedMaxDeaths}`);
-
-// // Create a gradient for the legend within the legend container using SVG
-// const gradientWidth = 20; // Adjust the width of the color bar
-// const gradientHeight = 300; // Adjust the height of the color bar
-
-// const legendSvg = legendContainer.append("svg")
-//     .attr("class", "legend-svg")
-//     .attr("width", gradientWidth)
-//     .attr("height", gradientHeight);
-
-// const legendGroup = legendSvg.append("g")
-//     .attr("class", "legend-group")
-//     .attr("transform", "translate(0, 20)"); // Adjust the vertical position of the color bar
-
-// // Create a rectangle to display the gradient (color bar)
-// legendGroup.append("rect")
-//     .attr("x", 0)
-//     .attr("y", 0)
-//     .attr("width", gradientWidth)
-//     .attr("height", gradientHeight - 20) // Adjust the height of the color bar
-//     .style("fill", "url(#gradient)");
-
-// // Add color stops to the gradient
-// const gradient = legendGroup.append("defs")
-//     .append("linearGradient")
-//     .attr("id", "gradient")
-//     .attr("x1", "0%")
-//     .attr("y1", "0%")
-//     .attr("x2", "0%")
-//     .attr("y2", "100%")
-//     .selectAll("stop")
-//     .data(colorScale.range())
-//     .enter().append("stop")
-//     .attr("offset", (d, i) => i / (colorScale.range().length - 1))
-//     .attr("stop-color", d => d);
+            //to load and display the GeoJSON data
+            d3.json("world.geojson").then(function (worldData) {
+                //to load the CSV data
+                d3.csv("deaths_gdp_obesity_sorted.csv").then(function (csvData) {
 
 
 
+                    //to get the unique years from the dataset
+                    const years = [...new Set(csvData.map(d => d.Year))];
 
+                    //populating the dropdown with years
+                    yearSelect.selectAll("option")
+                        .data(years)
+                        .enter()
+                        .append("option")
+                        .attr("value", d => d)
+                        .text(d => d);
 
+                    //setting the default value of the dropdown to "1990"
+                    yearSelect.property("value", "1990");
 
+                    let currentYearIndex = 0;
 
-                    //updating the map color coding and returning none for countries with missing data
-                    svg.selectAll("path")
-                        .style("fill", function (d) {
-                            const countryName = d.properties.name;
-                            const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
-                            if (countryData) {
-                                return colorScale(+countryData.total_deaths);
-                            }
-                            return "none"; 
-                        });
-                }
+                    function updateMap() {
+                        const selectedYear = yearSelect.property("value");
 
+                        //defining a color scale for the selected year
+                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
+                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
+                            .domain([0, maxTotalDeaths]);
 
-                const minYearIndex = 0;
-        const maxYearIndex = years.length - 1;
+                        //updating the map color coding and returning none for countries with missing data
+                        svg.selectAll("path")
+                            .style("fill", function (d) {
+                                const countryName = d.properties.name;
+                                const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
+                                if (countryData) {
+                                    return colorScale(+countryData.total_deaths);
+                                }
+                                return "none";
+                            });
 
-        // Play/Pause button logic
-        let isPlaying = false;
-        let timer;
-
-        d3.select("#play-pause-button").on("click", function() {
-            if (!isPlaying) {
-                playYears();
-            } else {
-                stopPlayback();
-            }
-        });
-
-        function playYears() {
-            isPlaying = true;
-            document.getElementById("play-pause-button").innerText = "Pause";
-            timer = setInterval(function() {
-                if (currentYearIndex <= maxYearIndex) {
-                    updateMap1(years[currentYearIndex]); // Update the map for the current year
-                    currentYearIndex++;
-                } else {
-                    stopPlayback();
-                }
-            }, 500); // Change the interval as needed (in milliseconds)
-        }
-
-        function stopPlayback() {
-            clearInterval(timer);
-            isPlaying = false;
-            document.getElementById("play-pause-button").innerText = "Play";
-            currentYearIndex = minYearIndex;
-        }
-
-                //Function to show tooltips on hover
-                function showTooltip(event, d) {
-                    const countryName = d['properties']['name'];
-                    const selectedYear = yearSelect.property("value");
-                    const countryData = csvData.find(data => data['Country/Territory'] === countryName && data['Year'] === selectedYear);
-                    if (countryData) {
-                        const totalDeaths = +countryData.total_deaths;
-                        const [x, y] = d3.pointer(event);
-                        d3.select("#tooltip")
-                            .style("left", x + "px")
-                            .style("top", y + "px")
-                            .html(`<strong>${countryName}</strong><br>Total Deaths: ${totalDeaths}`)
-                            .style("display", "block");
                     }
-                }
+                    function updateMap1(selectedYear) {
+                        // const selectedYear = yearSelect.property("value");
+                        console.log(selectedYear);
 
-                //Function to hide tooltips on mouseout
-                function hideTooltip() {
-                    d3.select("#tooltip").style("display", "none");
-                }
+                        //defining a color scale for the selected year
+                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
+                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
+                            .domain([0, maxTotalDeaths]);
 
-                function handleCountryClick() {
-                    const countryName = this.getAttribute("data-country-name");
-                    console.log(countryName);
-                    window.location.href = `countryGraph.html?country=${countryName}`;
-                }
+                        //updating the map color coding and returning none for countries with missing data
+                        svg.selectAll("path")
+                            .style("fill", function (d) {
+                                const countryName = d.properties.name;
+                                const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
+                                if (countryData) {
+                                    return colorScale(+countryData.total_deaths);
+                                }
+                                return "none";
+                            });
+                    }
 
-                //to draw the map with countries color-coded by total deaths, tooltips, and click handling
-                svg.selectAll("path")
-                    .data(worldData.features)
-                    .enter()
-                    .append("path")
-                    .attr("data-country-name", d => d['properties']['name'])
-                    .attr("d", path)
-                    .on("mouseover", showTooltip)
-                    .on("mouseout", hideTooltip)
-                    .on("click", handleCountryClick);
+                    const minYearIndex = 0;
+                    const maxYearIndex = years.length - 1;
 
-                //Initial map color coding
-                yearSelect.on("change", updateMap);
-                updateMap(); // Initialize the map with the default year
+                    // Play/Pause button logic
+                    let isPlaying = false;
+                    let timer;
+
+                    d3.select("#play-pause-button").on("click", function () {
+                        if (!isPlaying) {
+                            playYears();
+                        } else {
+                            stopPlayback();
+                        }
+                    });
+
+                    function playYears() {
+                        isPlaying = true;
+                        document.getElementById("play-pause-button").innerText = "Pause";
+                        timer = setInterval(function () {
+                            if (currentYearIndex <= maxYearIndex) {
+                                updateMap1(years[currentYearIndex]); // Update the map for the current year
+                                currentYearIndex++;
+                            } else {
+                                stopPlayback();
+                            }
+                        }, 500); // Change the interval as needed (in milliseconds)
+                    }
+
+                    function stopPlayback() {
+                        clearInterval(timer);
+                        isPlaying = false;
+                        document.getElementById("play-pause-button").innerText = "Play";
+                        currentYearIndex = minYearIndex;
+                    }
+
+                    //Function to show tooltips on hover
+                    function showTooltip(event, d) {
+                        const countryName = d['properties']['name'];
+                        const selectedYear = yearSelect.property("value");
+                        const countryData = csvData.find(data => data['Country/Territory'] === countryName && data['Year'] === selectedYear);
+                        if (countryData) {
+                            const totalDeaths = +countryData.total_deaths;
+                            const [x, y] = d3.pointer(event);
+                            d3.select("#tooltip")
+                                .style("left", x + "px")
+                                .style("top", y + "px")
+                                .html(`<strong>${countryName}</strong><br>Total Deaths: ${totalDeaths}`)
+                                .style("display", "block");
+                        }
+                    }
+
+                    //Function to hide tooltips on mouseout
+                    function hideTooltip() {
+                        d3.select("#tooltip").style("display", "none");
+                    }
+
+                    function handleCountryClick() {
+                        const countryName = this.getAttribute("data-country-name");
+                        console.log(countryName);
+                        window.location.href = `countryGraph.html?country=${countryName}`;
+                    }
+
+
+                    let currentMapData = worldData; // Start with worldData (choropleth map) as default
+
+                    function updateMapData(mapData) {
+                        svg.selectAll("path")
+                            .data(mapData.features)
+                            .join("path")
+                            .attr("data-country-name", d => d.properties.name)
+                            .attr("d", path)
+                            .on("mouseover", showTooltip)
+                            .on("mouseout", hideTooltip)
+                            .on("click", handleCountryClick);
+
+                        const selectedYear = yearSelect.property("value");
+
+                        //defining a color scale for the selected year
+                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
+                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
+                            .domain([0, maxTotalDeaths]);
+
+                            
+
+                        //updating the map color coding and returning none for countries with missing data
+                        svg.selectAll("path")
+                            .style("fill", function (d) {
+                                const countryName = d.properties.name;
+                                const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
+                                if (countryData) {
+                                    return colorScale(+countryData.total_deaths);
+                                }
+                                return "none";
+                            });
+                    }
+
+                    // Your existing code for the updateMapData function and initial map loading...
+
+                    const button = document.querySelector('#btnSwitch');
+                    button.addEventListener('click', function () {
+                        console.log("Button clicked!");
+                        const selectedYear = yearSelect.property("value"); // Get the selected year
+
+                        if (button.innerText === "Choropleth") {
+                            d3.json(`cartogram/cartogram_${selectedYear}.geojson`).then(function (cartogramYearData) {
+                                console.log(`cartogram/cartogram_${selectedYear}.geojson`)
+                                button.innerText = "Cartogram";
+                                svg.selectAll("path").remove(); // Remove existing paths before rendering new map
+                                updateMapData(cartogramYearData);
+                            }).catch(function (error) {
+                                console.log("Error loading cartogram data:", error);
+                            });
+                        } else {
+                            button.innerText = "Choropleth";
+                            svg.selectAll("path").remove(); // Remove existing paths before rendering new map
+                            updateMapData(worldData); // Update with the choropleth map data (worldData)
+                        }
+                    });
+
+                    // Render initial map with default data (worldData)
+                    
+                    updateMapData(currentMapData);
+
+
+
+
+
+                    // const button = document.querySelector('#btnSwitch');
+                    // button.onclick = function () {
+                    //     if (button.innerText === "Choropleth") {
+                    //         currentMapData = cartogramData; // Switch to cartogram map
+                    //         button.innerText = "Cartogram";
+                    //     } else {
+                    //         currentMapData = worldData; // Switch to choropleth map
+                    //         button.innerText = "Choropleth";
+                    //     }
+                    //     svg.selectAll("path").remove(); // Remove existing paths before rendering new map
+                    //     updateMapData(currentMapData); // Update the map with the current map data
+                    // };
+
+                    // // Render initial map
+                    // updateMapData(currentMapData);
+
+
+                    // to draw the map with countries color-coded by total deaths, tooltips, and click handling
+                    // svg.selectAll("path")
+                    //     .data(worldData.features)
+                    //     .enter()
+                    //     .append("path")
+                    //     .attr("data-country-name", d => d['properties']['name'])
+                    //     .attr("d", path)
+                    //     .on("mouseover", showTooltip)
+                    //     .on("mouseout", hideTooltip)
+                    //     .on("click", handleCountryClick);
+
+                    //Initial map color coding
+                    yearSelect.on("change", updateMap);
+                    updateMap(); // Initialize the map with the default year
+                });
             });
         });
     </script>
 </body>
+
 </html>
