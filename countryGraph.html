@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Country Graph</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <style>
@@ -184,118 +183,7 @@
             console.log(error);
         });
     </script>
-    <!-- 
-<script>
-    //Get the country name from the query parameter in the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const countryName = urlParams.get("country");
 
-    //Display the country name on the page
-    const countryNameElement = document.getElementById("country-name");
-    if (countryName) {
-        countryNameElement.textContent = `You clicked on: ${countryName}`;
-    } else {
-        countryNameElement.textContent = "No country selected.";
-    }
-
-    //Load the data from deaths_gdp_obesity_sorted.csv
-    Plotly.d3.csv("deaths_gdp_obesity_sorted.csv", function(data) {
-        //Filter the data for the selected country
-        const countryData = data.filter(d => d["Country/Territory"] === countryName);
-
-        //Extract years, total deaths, and GDP data
-        const years = countryData.map(d => d.Year);
-        const totalDeaths = countryData.map(d => d.total_deaths);
-        const gdpValues = countryData.map(d => d.Value);
-
-        //Define trace for total deaths
-        const trace1 = {
-            x: years,
-            y: totalDeaths,
-            mode: 'lines+markers',
-            type: 'scatter',
-            name: 'Total Deaths',
-            yaxis: 'y1'
-        };
-
-        //Define trace for GDP
-        const trace2 = {
-            x: years,
-            y: gdpValues,
-            mode: 'lines+markers',
-            type: 'scatter',
-            name: 'GDP',
-            yaxis: 'y2'
-        };
-
-        //Create data array with both traces
-        const plotData = [trace1, trace2];
-
-        //Define layout for the dual-axis plot
-        const layout = {
-            title: `GDP and Total Deaths in ${countryName}`,
-            xaxis: {
-                title: 'Year',
-            },
-            yaxis: {
-                title: 'Total Deaths',
-                side: 'left',
-            },
-            yaxis2: {
-                title: 'GDP',
-                side: 'right',
-                overlaying: 'y',
-            }
-        };
-
-        //Plot the data
-        Plotly.newPlot('plot', plotData, layout);
-    });
-</script> -->
-    <!-- <script>
-        //Define custom hex color codes for each cause of death
-        const customColors = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
-            '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94',
-            '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5', '#393b79', '#5254a3', '#6b6ecf', '#9c9ede',
-            '#637939', '#8ca252', '#b5cf6b', '#cedb9c', '#e7ba52', '#e7cb94', '#edc949', '#f0c17d'
-        ];
-
-        //Load the data from deaths.csv (modify the path to match your file structure)
-        Plotly.d3.csv("deaths_gdp_obesity_sorted.csv", function(data) {
-            //Filter the data for the selected country
-            const countryData = data.filter(d => d["Country/Territory"] === countryName);
-
-            //extract causes of death columns
-            const causesOfDeathColumns = Object.keys(countryData[0]).slice(3, 33);
-
-            //creating traces for each cause of death with custom colors
-            const traces = causesOfDeathColumns.map((cause, index) => {
-                return {
-                    x: countryData.map(d => d.Year),
-                    y: countryData.map(d => +d[cause]),
-                    name: cause,
-                    type: 'bar',
-                    marker: { color: customColors[index] }, 
-                };
-            });
-
-            //creating layout for the stacked bar chart
-            const layout = {
-                title: 'Causes of Death Over Time',
-                xaxis: {
-                    title: 'Year',
-                },
-                yaxis: {
-                    title: 'Number of Deaths',
-                },
-                barmode: 'stack',
-            };
-
-            //ploting the stacked bar chart
-            Plotly.newPlot('stacked-chart', traces, layout);
-        });
-    </script> -->
 
     <script>
         // Define custom hex color codes for each cause of death

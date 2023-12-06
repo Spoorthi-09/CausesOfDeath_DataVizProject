@@ -6,19 +6,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Map with D3.js</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://d3js.org/topojson.v2.min.js"></script> -->
     <style>
-        body {
+        .button-container {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            /* Remove default margin */
+            gap: 15px;
+            /* Adjust the gap between buttons as needed */
+            margin-top: 10px;
+            margin-bottom: 10px;
+            /* Adjust the margin as needed */
         }
 
-        path {
+        .button-container button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            /* Green background color */
+            color: white;
+            /* White text color */
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            width: 200px;
+            /* Explicitly set the width to ensure consistency */
+            transition: background-color 0.3s;
+            /* Add a smooth transition effect */
+        }
+
+        .button-container button:hover {
+            background-color: #263258;
+            /* Darker green color on hover */
+        }
+
+        #row1 {
+            margin: 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            /* Center content horizontally */
+            justify-content: center;
+            background-color: #e9eaec;
+            font-family: sans-serif;
+
+        }
+        #row2{
+            background-color: #e9e8ea;
+            font-family: sans-serif;
+        }
+
+        #flex1 {
+            flex: 1;
+            max-width: 60%;
+            overflow: hidden;
+            /* To hide overflow content */
+        }
+
+        #flex2 {
+            flex: 2;
+            max-width: 40%;
+            overflow: hidden;
+        }
+
+        #world-map path {
             fill: none;
             stroke: #333;
             stroke-width: 0.5;
@@ -36,75 +87,173 @@
             display: none;
         }
 
-        #year-dropdown {
+        .tooltip_stacked {
+            opacity: 0;
             position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
+            pointer-events: none;
+            /* Prevent tooltip blocking mouse events on bars */
+            left: 0px;
+            /* Initial positioning */
+            top: 0px;
+            transform: translate(-50%, calc(100% - 10px));
+            z-index: 999;
+        }
+
+        #line_map {
+            background-color: rgb(240, 250, 227);
+            box-shadow:2px 2px 5px rgba(0, 0, 0, 0.2) ;
+        }
+
+        #legend-container {
+            position: absolute;
+            bottom: 50%;
+            right: 20px;
+            /* Additional styling as needed */
+        }
+
+        .min-death-text {
+            bottom: 50px;
+        }
+
+        .legend-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* border: 1px solid #aaa; */
+            padding: 10px;
+            position: relative;
+            margin-right: 100px;
+        }
+
+        .legend-text {
+            margin: 5px;
+        }
+
+        #min-death-text {
+            position: absolute;
+            bottom: -25px;
+            /* Adjust the value to position it properly */
+        }
+
+        #max-death-text {
+            position: absolute;
+            top: -25px;
+            /* Adjust the value to position it properly */
+        }
+
+
+        #year-dropdown {
+            position: sticky;
             top: 20px;
             right: 20px;
         }
 
+        #year-select {
+            width: 100px;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Optional: Style the dropdown arrow */
+        #year-select::after {
+            content: "\25BC";
+            /* Unicode character for down arrow */
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
         .map-container {
             position: relative;
-            width: 960px;
+            width: 920px;
             /* Adjust this to match the SVG width */
-            height: 950px;
+            height: 900px;
             /* Adjust this to match the SVG height */
-            margin-right: 50px;
-            /* Provide space for the legend */
         }
 
-        #play-pause-button {
-            padding: 8px 16px;
-            margin-top: 10px;
+        .container {
+            display: flex;
         }
 
-
-        /* Styles for the legend */
-        .legend-container {
-            position: absolute;
-            justify-content: center;
-            top: 0;
-            right: 40px;
-            /* Adjust the right position to place it outside the map container */
-            width: 50px;
-            /* Adjust the width of the legend */
-            height: 100%;
-            /* Set the height of the legend */
-            /* Additional styling for the legend */
+        #stacked-chart {
+            flex: 1;
+            max-width: 70%;
+            overflow: hidden;
+            margin-left: 80px;
+            box-shadow:2px 2px 5px rgba(0.2, 0.2, 0.2, 0.2) ;
         }
 
-        .control {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .btn-secondary {
-            background-color: lightgray;
-            color: black;
-            border-color: transparent;
+        #checkbox-container {
+            flex: 1;
+            max-width: 30%;
+            margin-left: 40px;
+            /* Adjust margin as needed */
         }
     </style>
 </head>
 
 <body>
-    <div class="map-container">
-        <svg id="world-map" width="960" height="950"></svg>
+    <div id="row1">
+        <div style="flex:1;">
+            <div class="button-container">
+                <div>
+                    <button>Network Visualization</button>
+                </div>
+                <div>
+                    <button id="play-pause-button">Play</button>
+                </div>
+                <div class="control">
+                    <button name="change" id="btnSwitch">Choropleth</button>
+                </div>
+                <div id="year-dropdown">
+                    <label>Year Selected : </label>
+                    <select id="year-select"></select>
+                </div>
+            </div>
+            <h3 style="text-align: center;">Global Mortality</h3>
+
+            <div class="map-container">
+                <svg id="world-map" width="920" height="900"></svg>
+            </div>
+
+            <div class="legend-container">
+                <!-- Legend content goes here -->
+            </div>
+
+            <div class="tooltip" id="tooltip"></div>
+
+        </div>
+        <div style="flex:2;">
+            <div id="line_map">
+                <div id="country-info">
+                    <h3 style="text-align: center;" id="country-name"></h3>
+                </div>
+                <div id="plot"></div>
+            </div>
+            <div class="legend-container" id="legend-container">
+                <div class="legend-text" id="min-death-text"></div>
+                <div class="legend-text" id="max-death-text"></div>
+            </div>
+        </div>
+    </div>
+    <div id="row2">
+        <div class="container">
+            <div id="stacked-chart"></div>
+            <div id="checkbox-container"></div>
+        </div>
     </div>
 
-    <div class="legend-container">
-        <!-- Legend content goes here -->
-    </div>
 
-    <div class="tooltip" id="tooltip"></div>
-
-    <div id="year-dropdown">
-        <select id="year-select"></select>
-    </div>
-
-    <button id="play-pause-button">Play</button>
-
-    <div class="control">
-        <button name="change" id="btnSwitch" class="btn btn-secondary" style="width: 150px">Choropleth</button>
-    </div>
 
     <script>
         const svg = d3.select("#world-map");
@@ -141,16 +290,43 @@
                     //setting the default value of the dropdown to "1990"
                     yearSelect.property("value", "1990");
 
+                    // Add an event listener to the "Network Visualization" button
+                    const networkButton = document.querySelector('button');
+                    networkButton.addEventListener('click', function () {
+                        const selectedYear = yearSelect.property("value");
+                        window.location.href = `network_multilayer_allyears.html?year=${yearSelect.property("value")}`;
+                    });
+
                     let currentYearIndex = 0;
 
                     function updateMap() {
                         const selectedYear = yearSelect.property("value");
+
+                        if (button.innerText === "Choropleth") {
+                            // Load choropleth map data
+                            d3.json("world.geojson").then(function (worldData) {
+                                svg.selectAll("path").remove(); // Remove existing paths before rendering new map
+                                updateMapData(worldData);
+                            });
+                        } else {
+                            // Load cartogram data for the selected year
+                            d3.json(`cartogram/cartogram_${selectedYear}.geojson`).then(function (cartogramYearData) {
+                                svg.selectAll("path").remove(); // Remove existing paths before rendering new map
+                                updateMapData(cartogramYearData);
+                            }).catch(function (error) {
+                                console.log("Error loading cartogram data:", error);
+                            });
+                        }
 
                         //defining a color scale for the selected year
                         let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
                         let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
                         const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
                             .domain([0, maxTotalDeaths]);
+
+                        const legendContainer = d3.select("#legend-container");
+                        legendContainer.select("#min-death-text").text(minTotalDeaths);
+                        legendContainer.select("#max-death-text").text(maxTotalDeaths);
 
                         //updating the map color coding and returning none for countries with missing data
                         svg.selectAll("path")
@@ -242,12 +418,80 @@
                         d3.select("#tooltip").style("display", "none");
                     }
 
-                    function handleCountryClick() {
-                        const countryName = this.getAttribute("data-country-name");
-                        console.log(countryName);
-                        window.location.href = `countryGraph.html?country=${countryName}`;
+                    const zoom = d3.zoom()
+                        .scaleExtent([1, 8]) // Set the zoom scale limits
+                        .on("zoom", zoomed);
+
+                    // Apply the zoom behavior to the SVG
+                    svg.call(zoom);
+
+                    // Function to handle zooming
+                    function zoomed(event) {
+                        mapFeatures.attr("transform", event.transform);
                     }
 
+                    let currentZoomedCountry = null;
+
+                    function handleCountryClick(event, d) {
+                        const countryName = this.getAttribute("data-country-name");
+                        console.log(countryName);
+
+                        const [width, height] = getMapDimensions();
+
+                        // Check if the clicked country is already zoomed in
+                        const isZoomed = d3.select(this).classed('zoomed');
+
+                        // Get the bounds of the clicked country
+                        const bounds = path.bounds(d);
+                        const dx = bounds[1][0] - bounds[0][0];
+                        const dy = bounds[1][1] - bounds[0][1];
+                        const x = (bounds[0][0] + bounds[1][0]) / 2;
+                        const y = (bounds[0][1] + bounds[1][1]) / 2;
+                        // const scale = isZoomed ? 1 : Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height)));
+                        const scale = isZoomed ? 1 : Math.max(1, Math.min(3, 0.9 / Math.max(dx / width, dy / height)));
+                        const translate = isZoomed ? [0, 0] : [width / 2 - scale * x, height / 3 - scale * y];
+
+                        // Adjust opacity of the world map when zooming in
+                        d3.selectAll('#world-map path:not(.zoomed)')
+                            .transition()
+                            .duration(750)
+                            .style('opacity', isZoomed ? 1 : 0.3); // Reduce opacity if zooming in
+
+                        // Apply zoom transition to the clicked country's path element
+                        d3.selectAll('.zoomed')
+                            .classed('zoomed', false)
+                            .transition()
+                            .duration(750)
+                            .style('opacity', 0.3)
+                            .attr('transform', 'translate(0, 0)scale(1)');
+
+                        // Apply zoom transition to the clicked country's path element or zoom out if already zoomed in
+                        d3.select(this)
+                            .classed('zoomed', !isZoomed)
+                            .transition()
+                            .duration(750)
+                            .style('opacity', 1)
+                            .attr('transform', `translate(${translate})scale(${scale})`);
+
+                        // Remove the older line graph
+                        const plotContainer = document.getElementById("plot");
+                        plotContainer.innerHTML = "";
+                        const stackedContainer = document.getElementById("stacked-chart");
+                        stackedContainer.innerHTML = "";
+                        const checkContainer = document.getElementById("checkbox-container");
+                        checkContainer.innerHTML = "";
+                        lineGraph(countryName)
+                        stackedBarChart(countryName)
+
+                    }
+
+                    // Function to get map dimensions
+                    function getMapDimensions() {
+                        const svgNode = document.getElementById("world-map");
+                        const svgWidth = svgNode.getAttribute("width");
+                        const svgHeight = svgNode.getAttribute("height");
+                        return [+svgWidth, +svgHeight];
+                    }
 
                     let currentMapData = worldData; // Start with worldData (choropleth map) as default
 
@@ -269,7 +513,7 @@
                         const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
                             .domain([0, maxTotalDeaths]);
 
-                            
+
 
                         //updating the map color coding and returning none for countries with missing data
                         svg.selectAll("path")
@@ -284,11 +528,11 @@
                     }
 
                     // Your existing code for the updateMapData function and initial map loading...
-
                     const button = document.querySelector('#btnSwitch');
                     button.addEventListener('click', function () {
                         console.log("Button clicked!");
                         const selectedYear = yearSelect.property("value"); // Get the selected year
+                        console.log(selectedYear)
 
                         if (button.innerText === "Choropleth") {
                             d3.json(`cartogram/cartogram_${selectedYear}.geojson`).then(function (cartogramYearData) {
@@ -307,47 +551,492 @@
                     });
 
                     // Render initial map with default data (worldData)
-                    
+
+
+                    yearSelect.on("change", updateMap);
+                    // yearSelect.on("change", updateMapData(currentMapData));
+                    updateMap(); // Initialize the map with the default year
                     updateMapData(currentMapData);
 
+                    // Create a vertical color legend
+                    function createVerticalColorLegend(colorScale) {
+                        const legendWidth = 30;
+                        const legendHeight = 200;
 
+                        // Create SVG container for the legend
+                        const legend = d3.select("#legend-container")
+                            .append("svg")
+                            .attr("width", legendWidth)
+                            .attr("height", legendHeight);
 
+                        // Append a gradient for the color bar
+                        const defs = legend.append("defs");
 
+                        const linearGradient = defs.append("linearGradient")
+                            .attr("id", "vertical-gradient")
+                            .attr("x1", "0%")
+                            .attr("y1", "0%")
+                            .attr("x2", "0%")
+                            .attr("y2", "100%");
 
-                    // const button = document.querySelector('#btnSwitch');
-                    // button.onclick = function () {
-                    //     if (button.innerText === "Choropleth") {
-                    //         currentMapData = cartogramData; // Switch to cartogram map
-                    //         button.innerText = "Cartogram";
-                    //     } else {
-                    //         currentMapData = worldData; // Switch to choropleth map
-                    //         button.innerText = "Choropleth";
-                    //     }
-                    //     svg.selectAll("path").remove(); // Remove existing paths before rendering new map
-                    //     updateMapData(currentMapData); // Update the map with the current map data
-                    // };
+                        const numStops = 10; // Adjust the number of color stops as needed
+                        const stopPositions = d3.range(numStops).map(d => d / (numStops - 1));
 
-                    // // Render initial map
-                    // updateMapData(currentMapData);
+                        linearGradient.selectAll("stop")
+                            .data(stopPositions)
+                            .enter().append("stop")
+                            .attr("offset", d => d * 100 + "%")
+                            .attr("stop-color", d => colorScale(d));
 
+                        // Append a rectangle with the gradient
+                        legend.append("rect")
+                            .attr("width", legendWidth)
+                            .attr("height", legendHeight)
+                            .style("fill", "url(#vertical-gradient)");
+                    }
 
-                    // to draw the map with countries color-coded by total deaths, tooltips, and click handling
-                    // svg.selectAll("path")
-                    //     .data(worldData.features)
-                    //     .enter()
-                    //     .append("path")
-                    //     .attr("data-country-name", d => d['properties']['name'])
-                    //     .attr("d", path)
-                    //     .on("mouseover", showTooltip)
-                    //     .on("mouseout", hideTooltip)
-                    //     .on("click", handleCountryClick);
+                    // Example color scale
+                    const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
+                        .domain([1, 0]); // Set the domain based on your data
 
-                    //Initial map color coding
-                    yearSelect.on("change", updateMap);
-                    updateMap(); // Initialize the map with the default year
+                    // Call the function to create the vertical color legend
+                    createVerticalColorLegend(colorScale);
+
                 });
             });
         });
+    </script>
+
+    <script>
+        function lineGraph(countryName) {
+            const countryNameElement = document.getElementById("country-name");
+            if (countryName) {
+                countryNameElement.textContent = `GDP and Total Deaths in ${countryName}`;
+            } else {
+                countryNameElement.textContent = "No country selected.";
+            }
+
+            d3.csv("deaths_gdp_obesity_sorted.csv").then(function (data) {
+                const countryData = data.filter(d => d["Country/Territory"] === countryName);
+
+                const years = countryData.map(d => +d.Year);
+                const totalDeaths = countryData.map(d => +d.total_deaths.replace(/,/g, ''));
+                const gdpValues = countryData.map(d => +d.Value.replace(/,/g, ''));
+
+
+                const margin = { top: 10, right: 50, bottom: 80, left: 42 };
+                const width = 320 - margin.left - margin.right;
+                const height = 250 - margin.top - margin.bottom;
+
+                const svg = d3.select("#plot")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                const xScale = d3.scaleLinear()
+                    .domain(d3.extent(years))
+                    .range([0, width]);
+
+                const y1Scale = d3.scaleLinear()
+                    .domain([0, d3.max(totalDeaths)])
+                    .range([height, 0]);
+
+                const y2Scale = d3.scaleLinear()
+                    .domain([0, d3.max(gdpValues)])
+                    .range([height, 0]);
+
+                const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+                const y1Axis = d3.axisLeft(y1Scale).tickFormat(d3.format(".2s"));
+                const y2Axis = d3.axisRight(y2Scale).tickFormat(d3.format(".2s"));;
+
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .attr("text-anchor", "end")
+                    .attr("dy", "-0.5em")
+                    .attr("dx", "-0.8em");
+
+                svg.append("g")
+                    .call(y1Axis)
+                    .attr("class", "y-axis1");
+
+                svg.append("g")
+                    .attr("transform", `translate(${width},0)`)
+                    .call(y2Axis)
+                    .attr("class", "y-axis2");
+
+                const line1 = d3.line()
+                    .x((d, i) => xScale(years[i]))
+                    .y(d => y1Scale(d))
+                    .curve(d3.curveLinear);
+
+                const line2 = d3.line()
+                    .x((d, i) => xScale(years[i]))
+                    .y(d => y2Scale(d))
+                    .curve(d3.curveLinear);
+
+                svg.append("path")
+                    .datum(totalDeaths)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 2)
+                    .attr("d", line1);
+
+                svg.append("path")
+                    .datum(gdpValues)
+                    .attr("fill", "none")
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 2)
+                    .attr("d", line2);
+
+                // Apply transition to both lines
+                svg.selectAll("path")
+                    .transition()
+                    .duration(2000)
+                    .attrTween("d", function (d) {
+                        if (!d || !d.length) {
+                            return; // If data is null or has no length, skip
+                        }
+                        const interpolate = d3.scaleLinear()
+                            .domain([0, 1])
+                            .rangeRound([1, d.length - 1]);
+                        const currentPath = this;
+                        return function (t) {
+                            if (currentPath.getAttribute("stroke") === "steelblue") {
+                                return line1(d.slice(0, interpolate(t)));
+                            } else if (currentPath.getAttribute("stroke") === "red") {
+                                return line2(d.slice(0, interpolate(t)));
+                            }
+                        };
+                    });
+
+                // Label for x-axis
+                svg.append("text")
+                    .attr("class", "x-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("x", width / 2)
+                    .attr("y", height + margin.bottom - 10)
+                    .text("Years");
+
+                // Append left y-axis label
+                svg.append("text")
+                    .attr("class", "y-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
+                    .attr("fill","steelblue")
+                    .style("font-weight", "bold")
+                    .attr("x", -height / 2)
+                    .attr("y", -margin.left + 10) // Adjust the horizontal position of the left y-axis label
+                    .text("Total Deaths (in millions)");
+
+                // Append right y-axis label
+                svg.append("text")
+                    .attr("class", "y-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("fill","red")
+                    .style("font-weight", "bold")
+                    .attr("transform", `translate(${width + 10 + margin.right / 2}, ${height / 2}) rotate(90)`) // Adjust the position of the right y-axis label
+                    .text("GDP (in millions)");
+
+            }).catch(function (error) {
+                console.log(error);
+            });
+        }
+
+    </script>
+
+    <script>
+        function stackedBarChart(countryName) {
+            const customColors = [
+                '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+                '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94',
+                '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5', '#393b79', '#5254a3', '#6b6ecf', '#9c9ede',
+                '#637939', '#8ca252', '#b5cf6b', '#cedb9c', '#e7ba52', '#e7cb94'
+            ];
+
+            // Load the data from deaths.csv (modify the path to match your file structure)
+            d3.csv("deaths_gdp_obesity_sorted.csv").then(function (data) {
+                // Filter the data for the selected country
+                const countryData = data.filter(d => d["Country/Territory"] === countryName);
+
+                // Extract causes of death columns
+                const causesOfDeathColumns = Object.keys(countryData[0]).slice(3, 33);
+
+                // Create SVG dimensions
+                const margin = { top: 10, right: 50, bottom: 50, left: 50 };
+                const width = 700 - margin.left - margin.right;
+                const height = 500 - margin.top - margin.bottom;
+
+                // Create SVG
+                const svg = d3.select("#stacked-chart")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+                // Create tooltip
+                const tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip_stacked")
+                    .style("opacity", 0)
+                    .style("position", "absolute")
+                    .style("background-color", "white")
+                    .style("border", "1px solid black")
+                    .style("padding", "5px")
+                    .style("pointer-events", "none") // Prevent tooltip blocking mouse events on bars
+                    .style("left", "0px") // Initial positioning
+                    .style("top", "0px")
+                    .style("transform", "translate(-50%, calc(100% - 10px))")
+                    .style("z-index", 999);
+
+                const stackedData = d3.stack().keys(causesOfDeathColumns)(countryData);
+
+                // Create scales for x and y axes
+                const xScale = d3.scaleBand()
+                    .domain(countryData.map(d => d.Year))
+                    .range([0, width])
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                    .range([height, 0]);
+
+                // Adjusting y-axis scale and ticks for millions
+                const yAxis = d3.axisLeft(yScale)
+                    .tickFormat(d3.format(".2s")); // Format ticks in millions
+
+                // Create color scale for different causes of death
+                const color = d3.scaleOrdinal()
+                    .domain(causesOfDeathColumns)
+                    .range(customColors);
+
+                const causeColorMap = {};
+                causesOfDeathColumns.forEach((cause, index) => {
+                    causeColorMap[cause] = customColors[index % customColors.length];
+                });
+
+                // Add title with countryName
+                svg.append("text")
+                    .attr("id", "chart-title")
+                    .attr("x", width / 2)
+                    .attr("y", -margin.top + 20)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "1.5em")
+                    .attr("font-weight","bold")
+                    .text(`Causes of deaths in ${countryName}`);
+                //Add bars to the chart
+                const bars = svg.selectAll(".bars")
+                    .data(stackedData, d => d.key)
+                    .enter()
+                    .append("g")
+                    .attr("class", "bars")
+                    .attr("fill", d => causeColorMap[d.key])
+                    .selectAll("rect")
+                    .data(d => d)
+                    .enter()
+                    .append("rect")
+                    .attr("x", (d, i) => xScale(countryData[i].Year))
+                    .attr("y", d => yScale(d[1]))
+                    .attr("height", d => yScale(d[0]) - yScale(d[1]))
+                    .attr("width", xScale.bandwidth())
+                    .on("mouseover", function (event, d) {
+                        const disease = d3.select(this.parentNode).datum().key;
+                        const deaths = d[1] - d[0];
+
+                        // Get coordinates and dimensions of the hovered bar
+                        const [x, y, width, height] = [event.pageX, event.pageY, this.getBBox().width, this.getBBox().height];
+
+                        // Position tooltip relative to the bar
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0.9)
+                            .style("left", `${x - width / 2}px`)
+                            .style("top", `${y - height - 10}px`); // Offset to place it above the bar
+
+                        // Set tooltip content
+                        tooltip.html(`${disease}: ${deaths}`);
+                    })
+                    // Hide tooltip on mouseout
+                    .on("mouseout", function () {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0);
+                    });
+
+                // Add x-axis
+                svg.append("g")
+                    .attr("class", "x-axis")
+                    .attr("transform", `translate(0, ${height})`)
+                    .call(d3.axisBottom(xScale))
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .attr("text-anchor", "end")
+                    .attr("dy", "-0.5em")
+                    .attr("dx", "-0.8em");
+
+                // Create y-axis
+                svg.append("g")
+                    .attr("class", "y-axis")
+                    .call(yAxis)
+                    .append("text") // Label for y-axis
+                    .attr("class", "y-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -margin.left + 20)
+                    .text("Total Deaths (in millions)");
+
+                // Add x-axis label
+                svg.append("text")
+                    .attr("class", "x-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("x", width / 2)
+                    .attr("y", height + margin.bottom - 10)
+                    .text("Years");
+
+                // Add y-axis label
+                svg.append("text")
+                    .attr("class", "y-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -margin.left + 10)
+                    .text("Total Deaths (in millions)");
+
+                const checkboxContainer = d3.select("#checkbox-container");
+
+                // Create checkboxes with color squares for each disease
+                const checkboxes = checkboxContainer.selectAll("div")
+                    .data(causesOfDeathColumns)
+                    .enter()
+                    .append("div")
+                    .attr("class", "checkbox-group");
+
+                checkboxes
+                    .append("input")
+                    .attr("type", "checkbox")
+                    .attr("class", "disease-checkbox")
+                    .attr("id", (d, i) => `checkbox-${i}`)
+                    .attr("value", d => d)
+                    .property("checked", true); // Initial checkbox state
+
+                checkboxes
+                    .append("span")
+                    .style("display", "inline-block")
+                    .style("width", "10px")
+                    .style("height", "10px")
+                    .style("background-color", (d, i) => customColors[i])
+                    .style("margin-right", "5px");
+
+                checkboxes
+                    .append("label")
+                    .attr("for", (d, i) => `checkbox-${i}`)
+                    .text(d => d);
+
+                // Function to update the chart based on checkbox status
+                function updateChart() {
+                    const selectedCauses = [];
+
+                    // Check the status of each checkbox and collect selected causes
+                    d3.selectAll(".disease-checkbox").each(function () {
+                        const cause = d3.select(this).property("value");
+                        if (this.checked) {
+                            selectedCauses.push(cause);
+                        }
+                    });
+
+                    // Filter the data based on selected causes
+                    const filteredData = countryData.map(d => ({
+                        Year: d.Year,
+                        total_deaths: d.total_deaths,
+                        ...selectedCauses.reduce((acc, cause) => {
+                            acc[cause] = d[cause];
+                            return acc;
+                        }, {})
+                    }));
+
+                    const stackedFilteredData = d3.stack().keys(selectedCauses)(filteredData);
+
+                    // Update y-axis domain based on the filtered data
+                    const maxTotalDeaths = d3.max(filteredData, d => +d.total_deaths);
+                    yScale.domain([0, maxTotalDeaths]);
+
+                    // Update bars with new data
+                    const bars = svg.selectAll(".bars")
+                        .data(stackedFilteredData, d => d.key);
+
+                    // Exit
+                    bars.exit()
+                        .selectAll("rect")
+                        .transition()
+                        .duration(500)
+                        .attr("y", yScale(0))
+                        .attr("height", 0)
+                        .remove();
+
+                    bars.exit()
+                        .transition()
+                        .duration(500)
+                        .remove();
+
+                    // Enter
+                    const newBars = bars.enter()
+                        .append("g")
+                        .attr("class", "bars")
+                        .attr("fill", d => causeColorMap[d.key]);
+
+                    newBars.selectAll("rect")
+                        .data(d => d)
+                        .enter()
+                        .append("rect")
+                        .attr("x", (d, i) => xScale(filteredData[i].Year))
+                        .attr("y", yScale(0))
+                        .attr("height", 0)
+                        .attr("width", xScale.bandwidth())
+                        .transition()
+                        .duration(500)
+                        .attr("y", d => yScale(+d[1]))
+                        .attr("height", d => yScale(+d[0]) - yScale(+d[1]));
+
+                    // Update
+                    const allBars = bars.merge(newBars).selectAll("rect")
+                        .data(d => d, (d, i) => `${d.key}-${i}`);
+
+                    allBars.transition()
+                        .duration(500)
+                        .attr("x", (d, i) => xScale(filteredData[i].Year))
+                        .attr("y", d => yScale(+d[1]))
+                        .attr("height", d => yScale(+d[0]) - yScale(+d[1]));
+
+                    // Remove unnecessary elements
+                    allBars.exit().remove();
+
+                    // Update x-axis
+                    svg.select(".x-axis")
+                        .transition()
+                        .duration(500)
+                        .call(d3.axisBottom(xScale))
+                        .selectAll("text")
+                        .attr("transform", "rotate(-45)")
+                        .attr("text-anchor", "end")
+                        .attr("dy", "-0.5em")
+                        .attr("dx", "-0.8em");
+
+                    // Update y-axis
+                    svg.select(".y-axis")
+                        .transition()
+                        .duration(500)
+                        .call(yAxis);
+                }
+
+                // Event listener for checkbox changes
+                d3.selectAll(".disease-checkbox").on("change", updateChart);
+            });
+        }
     </script>
 </body>
 

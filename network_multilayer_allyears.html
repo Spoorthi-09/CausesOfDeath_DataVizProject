@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Data Network Visualization</title>
+    <script src="trial\libs\d3.js"></script>
+    <style>
+        svg {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+
+        button:hover {
+            background-color: #45a049;
+            /* Darker shade on hover */
+        }
+
+        line {
+            stroke-width: .3;
+        }
+
+        text {
+            font-family: sans-serif;
+            font-size: xx-small;
+        }
+
+        .inActive {
+            fill: rgb(216, 214, 214);
+        }
+
+        #detailsPanel {
+            position: absolute;
+            font-size: medium;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .legend {
+            position: absolute;
+            top: 10px;
+            /* Adjust the top position as needed */
+            left: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: white;
+            margin-top: 20px;
+            /* Adjust the margin-top to create space between details panel and legend */
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+        }
+
+        .legend-label {
+            font-size: 14px;
+        }
+
+        #detailsModal {
+            display: none;
+        }
+
+        .modal-content {
+            max-width: 800px;
+            margin: 30px auto;
+        }
+
+        .title {
+            text-align: center;
+            font-family: sans-serif;
+            font-size: 25px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ///---------------------------------------------------------------details button---------------------------------------- -->
+    <!-- <button type="button" class="btn btn-primary" id="detailsButton">
+        Details
+    </button> -->
+
+    <!-- Modal for displaying details  -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Details</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal Body (Table with details) -->
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Disease</th>
+                                <th>Range</th>
+                                <th>Number of Countries</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Add rows dynamically using JavaScript when the button is clicked -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- ///---------------------------------------------------------------details button---------------------------------------- -->
+
+    <div>
+        <button onclick="goToMainPage()">Go to Main page</button>
+    </div>
+    <script>
+        function goToMainPage() {
+            // Redirect to index.html
+            window.location.href = 'index.html';
+        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const yearSelected = urlParams.get("year");
+
+        //Creating title
+        d3.select("body").append("div")
+            .attr("class", "title")
+            .text(`Global Max Deaths by Cause (${yearSelected})`);
+        function visualizeDataForYear(year) {
+            // Creating SVG
+            const width = 800;
+            const height = 1500;
+            let svg = d3.select("body").append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`);
+
+            // Creating side panel
+            let detailsPanel = d3.select("body").append("div")
+                .attr("id", "detailsPanel");
+
+            // Creating legend
+            let legend = d3.select("body").append("div")
+                .attr("class", "legend");
+
+            // Load data for a specific year
+            d3.json("..\\data\\network_data_multi_layered.json").then(data => {
+                const filteredData = data.years[year];
+                if (!filteredData) {
+                    console.error(`Data not available for year ${year}`);
+                    return;
+                }
+
+
+                // Define your custom death ranges and corresponding node sizes
+                const deathRanges = [0, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000,
+                    110000, 120000, 130000, 140000, 150000, 160000, 170000, 180000, 190000, 200000];
+                const nodeSizes = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42];
+
+                // Create a custom scale based on the death ranges and node sizes
+                const radiusScale = d3.scaleThreshold()
+                    .domain(deathRanges)
+                    .range(nodeSizes);
+
+                // Extract unique diseases from the nodes
+                const uniqueDisease = Array.from(new Set(filteredData.nodes.map(node => node.disease)));
+
+                // Generate distinct colors based on diseases using a larger color set
+                const dynamicColorScale = d3.scaleOrdinal(["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"])
+                    .domain(uniqueDisease);
+
+
+                // Appending nodes and links to the canvas
+
+                // Creating a group canvas
+                let gCanvas = svg.append("g").attr("class", "canvas");
+
+                // Adding links
+                let gLinks = gCanvas.selectAll('.links')
+                    .data(filteredData.links)
+                    .enter()
+                    .append("line")
+                    .attr("stroke", "none");
+
+                // Appending nodes
+                let gNodes = gCanvas.selectAll()
+                    .data(filteredData.nodes)
+                    .enter()
+                    .append('g');
+                let circles = gNodes.append('circle')
+                    .attr("r", (d) => radiusScale(d.deaths))
+                    .attr("fill", d => dynamicColorScale(d.disease))
+                    .attr("class", d => "g_" + d.disease.replace(/[\/\s]+/g, "_"));
+                gNodes.on("mouseenter", (m, d) => {
+                    d3.selectAll("circle").classed("inActive", true)
+                    d3.selectAll(".g_" + d.disease.replace(/[\/\s]+/g, "_")).classed("inActive", false)
+                });
+                gNodes.on("mouseleave", (m, d) => {
+                    d3.selectAll("circle").classed("inActive", false)
+                });
+                gNodes.on("click", (event, d) => {
+                    // Display details in the side panel on click
+                    showNodeDetails(d);
+                });
+                // gNodes.append("text")
+                //     .text(d => d.name)
+                //     .attr("text-anchor", "middle")
+                //     .attr("dy", (d) => {
+                //         const radius = radiusScale(d.deaths);
+                //         const dyValue = isNaN(radius) ? 0 : -radius - 2;
+                //         console.log("dyValue:", dyValue);
+                //         return dyValue;
+                //     });
+
+                let fSim = d3.forceSimulation(filteredData.nodes)
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('links', d3.forceLink(filteredData.links)
+                        .id(d => d.id)
+                        .distance(50)
+                        .strength(.2))
+                    .force('collide', d3.forceCollide()
+                        .radius((d) => radiusScale(d.deaths) * 1.5)
+                        .iterations(2))
+                    .force("charge", d3.forceManyBody().strength(-10))
+                    .force("x", d3.forceX().strength(-0.001))
+                    .force("y", d3.forceY().strength(-0.001))
+                    .on('tick', update);
+
+                function update() {
+                    gNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                    gLinks.attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+                }
+
+                // Legend
+                const legendItems = legend.selectAll(".legend-item")
+                    .data(uniqueDisease)
+                    .enter()
+                    .append("div")  // Append a div for each legend item
+                    .attr("class", "legend-item");
+
+                legendItems.append("div")  // Append a div for the color rectangle
+                    .attr("class", "legend-color")
+                    .style("background-color", d => dynamicColorScale(d));
+
+                legendItems.append("div")  // Append a div for the text label
+                    .attr("class", "legend-label")
+                    .text(d => d);
+
+
+                svg.call(d3.zoom()
+                    .extent([[0, 0], [width, height]])
+                    .scaleExtent([1, 8])
+                    .on("zoom", ({ transform }) => {
+                        gCanvas.attr("transform", transform)
+                    }));
+
+                function showNodeDetails(node) {
+                    detailsPanel.html(`
+                        <h2>${node.name}</h2>
+                        <p>Disease: ${node.disease}</p>
+                        <p>Deaths: ${node.deaths}</p>
+                        <p>Year: ${node.year}</p>
+                    `);
+                }
+
+                ///---------------------------------------------------------------details button----------------------------------------
+                // Button click event to populate and show the modal
+                d3.select("button.btn-primary").on("click", function () {
+                    // Get the filtered data for the specific year
+                    const filteredData = data.years[year];
+                    if (!filteredData) {
+                        console.error(`Data not available for year ${year}`);
+                        return;
+                    }
+
+                    // Populate the modal table with relevant information
+                    populateModalTable(filteredData);
+                    // Show the modal
+                    $("#detailsModal").modal("show");
+                });
+                function populateModalTable(filteredData) {
+                    // Extract the necessary information from your data
+                    const modalData = [];
+
+                    // Create a map to store the count for each disease and range
+                    const countMap = new Map();
+
+                    // Iterate over your data and extract information for the modal
+                    filteredData.nodes.forEach(node => {
+                        const range = getDeathRange(node.deaths);
+                        const key = `${node.disease}-${range}`;
+
+                        // Increment the count for the disease and range
+                        countMap.set(key, (countMap.get(key) || 0) + 1);
+                    });
+
+                    // Convert the map to an array of objects
+                    countMap.forEach((count, key) => {
+                        const [disease, range] = key.split('-');
+                        modalData.push({
+                            disease,
+                            range,
+                            count
+                        });
+                    });
+
+                    // Sort the modalData by disease and then by range
+                    modalData.sort((a, b) => {
+                        if (a.disease !== b.disease) {
+                            return a.disease.localeCompare(b.disease);
+                        }
+                        return a.range.localeCompare(b.range);
+                    });
+
+                    // Select the modal body and bind the data to table rows
+                    const modalBody = d3.select("#detailsModal tbody");
+                    // Clear existing table rows
+                    modalBody.html("");
+
+                    const rows = modalBody.selectAll("tr")
+                        .data(modalData)
+                        .enter()
+                        .append("tr");
+
+                    // Add cells with data
+                    rows.append("td").text(d => d.disease);
+                    rows.append("td").text(d => d.range);
+                    rows.append("td").text(d => d.count);
+                    // Add other cells as needed
+                }
+
+
+                // Define a function to get the death range based on your criteria
+                function getDeathRange(deaths) {
+                    const maxRange = 200000; // Set your maximum range
+
+                    // Calculate the number of steps
+                    const step = 10000;
+                    const numSteps = Math.ceil(maxRange / step);
+
+                    // Generate ranges dynamically
+                    const ranges = Array.from({ length: numSteps }, (_, index) => ({
+                        min: index * step + 1,
+                        max: (index + 1) * step
+                    }));
+
+                    for (const range of ranges) {
+                        if (deaths >= range.min && deaths <= range.max) {
+                            return `${range.min}-${range.max}`;
+                        }
+                    }
+
+                    // Default case
+                    return "Unknown Range";
+                }
+                ///---------------------------------------------------------------details button----------------------------------------
+
+            });
+        }
+
+        // Call the function with the desired year
+        visualizeDataForYear(yearSelected); // Change the year as needed
+    </script>
+</body>
+
+</html>
