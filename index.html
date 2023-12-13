@@ -9,10 +9,12 @@
     <style>
         .button-container {
             display: flex;
-            gap: 15px;
+            gap: 30px;
             /* Adjust the gap between buttons as needed */
             margin-top: 10px;
             margin-bottom: 10px;
+            margin-left: 130px;
+            align-items: center;
             /* Adjust the margin as needed */
         }
 
@@ -51,12 +53,18 @@
             font-family: sans-serif;
 
         }
-        #row2{
+
+        #row2 {
             background-color: #e9e8ea;
             font-family: sans-serif;
         }
 
         #flex1 {
+            display: flex;
+            flex-direction: column;
+            /* Display children elements vertically */
+            align-items: center;
+            /* Center items horizontally in the container */
             flex: 1;
             max-width: 60%;
             overflow: hidden;
@@ -73,6 +81,18 @@
             fill: none;
             stroke: #333;
             stroke-width: 0.5;
+        }
+
+        #year-slider-container {
+            width: 100%;
+            /* Make the slider container take up the full width */
+            margin-top: 10px;
+            /* Add some top margin for spacing */
+        }
+
+        #year-slider {
+            width: 90%;
+            /* Make the slider take up the full width of its container */
         }
 
         .tooltip {
@@ -104,7 +124,7 @@
 
         #line_map {
             background-color: rgb(240, 250, 227);
-            box-shadow:2px 2px 5px rgba(0, 0, 0, 0.2) ;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         #legend-container {
@@ -144,35 +164,6 @@
             /* Adjust the value to position it properly */
         }
 
-
-        #year-dropdown {
-            position: sticky;
-            top: 20px;
-            right: 20px;
-        }
-
-        #year-select {
-            width: 100px;
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #fff;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        /* Optional: Style the dropdown arrow */
-        #year-select::after {
-            content: "\25BC";
-            /* Unicode character for down arrow */
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-
         .map-container {
             position: relative;
             width: 920px;
@@ -190,7 +181,7 @@
             max-width: 70%;
             overflow: hidden;
             margin-left: 80px;
-            box-shadow:2px 2px 5px rgba(0.2, 0.2, 0.2, 0.2) ;
+            box-shadow: 2px 2px 5px rgba(0.2, 0.2, 0.2, 0.2);
         }
 
         #checkbox-container {
@@ -207,7 +198,7 @@
         <div style="flex:1;">
             <div class="button-container">
                 <div>
-                    <button>Network Visualization</button>
+                    <button id="cluster-btn">Cluster Visualization</button>
                 </div>
                 <div>
                     <button id="play-pause-button">Play</button>
@@ -215,12 +206,14 @@
                 <div class="control">
                     <button name="change" id="btnSwitch">Choropleth</button>
                 </div>
-                <div id="year-dropdown">
-                    <label>Year Selected : </label>
-                    <select id="year-select"></select>
-                </div>
             </div>
-            <h3 style="text-align: center;">Global Mortality</h3>
+            <h3 style="text-align: center;">Global Mortality Rate</h3>
+
+            <div id="year-slider-container">
+                <label for="year-slider">Year:</label>
+                <input type="range" min="1990" max="2019" step="1" value="1990" id="year-slider">
+                <span id="selected-year">1990</span>
+            </div>
 
             <div class="map-container">
                 <svg id="world-map" width="920" height="900"></svg>
@@ -253,11 +246,9 @@
         </div>
     </div>
 
-
-
     <script>
         const svg = d3.select("#world-map");
-        const yearSelect = d3.select("#year-select");
+        //const yearSelect = d3.select("#year-select");
 
         //defining projection for the map
         const projection = d3.geoMercator()
@@ -272,35 +263,36 @@
             //to load and display the GeoJSON data
             d3.json("world.geojson").then(function (worldData) {
                 //to load the CSV data
-                d3.csv("deaths_gdp_obesity_sorted.csv").then(function (csvData) {
+                d3.csv("merged_data.csv").then(function (csvData) {
+                    // Replace the yearSelect and its usage with the slider
+                    const yearSlider = d3.select("#year-slider");
+                    const selectedYearLabel = d3.select("#selected-year");
 
+                    // Set initial value
+                    selectedYearLabel.text(yearSlider.property("value"));
+
+                    // Add an input event listener to the slider
+                    yearSlider.on("input", function () {
+                        const selectedYear = this.value;
+                        selectedYearLabel.text(selectedYear);
+                        updateMap();
+                    });
 
 
                     //to get the unique years from the dataset
                     const years = [...new Set(csvData.map(d => d.Year))];
 
-                    //populating the dropdown with years
-                    yearSelect.selectAll("option")
-                        .data(years)
-                        .enter()
-                        .append("option")
-                        .attr("value", d => d)
-                        .text(d => d);
-
-                    //setting the default value of the dropdown to "1990"
-                    yearSelect.property("value", "1990");
-
                     // Add an event listener to the "Network Visualization" button
-                    const networkButton = document.querySelector('button');
+                    const networkButton = document.querySelector('#cluster-btn');
                     networkButton.addEventListener('click', function () {
-                        const selectedYear = yearSelect.property("value");
-                        window.location.href = `network_multilayer_allyears.html?year=${yearSelect.property("value")}`;
+                        const selectedYear = yearSlider.property("value");
+                        window.location.href = `network_multilayer_allyears.html?year=${selectedYear}`;
                     });
 
                     let currentYearIndex = 0;
 
                     function updateMap() {
-                        const selectedYear = yearSelect.property("value");
+                        const selectedYear = yearSlider.property("value");
 
                         if (button.innerText === "Choropleth") {
                             // Load choropleth map data
@@ -319,22 +311,42 @@
                         }
 
                         //defining a color scale for the selected year
-                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
-                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        // let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
+                        // let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+
+                        let deathRatios = csvData
+                            .filter(data => data.Year === selectedYear && isFinite(+data.total_deaths / +data.Population))
+                            .map(data => +data.total_deaths / +data.Population);
+
+                        let minDeathRatio = d3.min(deathRatios).toFixed(4);
+                        let maxDeathRatio = d3.max(deathRatios).toFixed(4);
+
                         const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-                            .domain([0, maxTotalDeaths]);
+                            .domain([minDeathRatio, maxDeathRatio]);
 
                         const legendContainer = d3.select("#legend-container");
-                        legendContainer.select("#min-death-text").text(minTotalDeaths);
-                        legendContainer.select("#max-death-text").text(maxTotalDeaths);
+                        legendContainer.select("#min-death-text").text((minDeathRatio * 100).toFixed(2) + '%');
+                        legendContainer.select("#max-death-text").text((maxDeathRatio * 100).toFixed(2) + '%');
 
                         //updating the map color coding and returning none for countries with missing data
+                        // svg.selectAll("path")
+                        //     .style("fill", function (d) {
+                        //         const countryName = d.properties.name;
+                        //         const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
+                        //         if (countryData) {
+                        //             return colorScale(+countryData.total_deaths);
+                        //         }
+                        //         return "none";
+                        //     });
+
                         svg.selectAll("path")
                             .style("fill", function (d) {
                                 const countryName = d.properties.name;
                                 const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
-                                if (countryData) {
-                                    return colorScale(+countryData.total_deaths);
+                                if (countryData && isFinite(+countryData.total_deaths / +countryData.Population)) {
+                                    const deathRatio = (+countryData.total_deaths / +countryData.Population).toFixed(4);
+
+                                    return d3.interpolateYlGnBu(colorScale(deathRatio));
                                 }
                                 return "none";
                             });
@@ -345,18 +357,25 @@
                         console.log(selectedYear);
 
                         //defining a color scale for the selected year
-                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
-                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        let deathRatios = csvData
+                            .filter(data => data.Year === selectedYear && isFinite(+data.total_deaths / +data.Population))
+                            .map(data => +data.total_deaths / +data.Population);
+
+                        let minDeathRatio = d3.min(deathRatios).toFixed(4);
+                        let maxDeathRatio = d3.max(deathRatios).toFixed(4);
                         const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-                            .domain([0, maxTotalDeaths]);
+                            .domain([minDeathRatio, maxDeathRatio])
+                            .range([0, 1]);
 
                         //updating the map color coding and returning none for countries with missing data
                         svg.selectAll("path")
                             .style("fill", function (d) {
                                 const countryName = d.properties.name;
                                 const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
-                                if (countryData) {
-                                    return colorScale(+countryData.total_deaths);
+                                if (countryData && isFinite(+countryData.total_deaths / +countryData.Population)) {
+                                    const deathRatio = (+countryData.total_deaths / +countryData.Population).toFixed(4);
+
+                                    return d3.interpolateYlGnBu(colorScale(deathRatio));
                                 }
                                 return "none";
                             });
@@ -400,15 +419,15 @@
                     //Function to show tooltips on hover
                     function showTooltip(event, d) {
                         const countryName = d['properties']['name'];
-                        const selectedYear = yearSelect.property("value");
+                        const selectedYear = yearSlider.property("value");
                         const countryData = csvData.find(data => data['Country/Territory'] === countryName && data['Year'] === selectedYear);
                         if (countryData) {
-                            const totalDeaths = +countryData.total_deaths;
+                            const ratio = +countryData.total_deaths/ +countryData.Population;
                             const [x, y] = d3.pointer(event);
                             d3.select("#tooltip")
-                                .style("left", x + "px")
-                                .style("top", y + "px")
-                                .html(`<strong>${countryName}</strong><br>Total Deaths: ${totalDeaths}`)
+                                .style("left", event.clientX + "px")
+                                .style("top", event.clientY + "px")
+                                .html(`<strong>${countryName}</strong><br>Mortality Rate:<br> ${(ratio*100).toFixed(4)}%`)
                                 .style("display", "block");
                         }
                     }
@@ -455,14 +474,14 @@
                         d3.selectAll('#world-map path:not(.zoomed)')
                             .transition()
                             .duration(750)
-                            .style('opacity', isZoomed ? 1 : 0.3); // Reduce opacity if zooming in
+                            .style('opacity', isZoomed ? 1 : 0.0); // Reduce opacity if zooming in
 
                         // Apply zoom transition to the clicked country's path element
                         d3.selectAll('.zoomed')
                             .classed('zoomed', false)
                             .transition()
                             .duration(750)
-                            .style('opacity', 0.3)
+                            .style('opacity', 1)
                             .attr('transform', 'translate(0, 0)scale(1)');
 
                         // Apply zoom transition to the clicked country's path element or zoom out if already zoomed in
@@ -505,13 +524,18 @@
                             .on("mouseout", hideTooltip)
                             .on("click", handleCountryClick);
 
-                        const selectedYear = yearSelect.property("value");
+                        const selectedYear = yearSlider.property("value");
 
                         //defining a color scale for the selected year
-                        let minTotalDeaths = d3.min(csvData, data => data.Year === selectedYear ? +data.total_deaths : Infinity);
-                        let maxTotalDeaths = d3.max(csvData, data => data.Year === selectedYear ? +data.total_deaths : 0);
+                        let deathRatios = csvData
+                            .filter(data => data.Year === selectedYear && isFinite(+data.total_deaths / +data.Population))
+                            .map(data => +data.total_deaths / +data.Population);
+
+                        let minDeathRatio = d3.min(deathRatios).toFixed(4);
+                        let maxDeathRatio = d3.max(deathRatios).toFixed(4);
                         const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-                            .domain([0, maxTotalDeaths]);
+                            .domain([minDeathRatio, maxDeathRatio])
+                            .range([0, 1]);
 
 
 
@@ -520,18 +544,21 @@
                             .style("fill", function (d) {
                                 const countryName = d.properties.name;
                                 const countryData = csvData.find(data => data['Country/Territory'] === countryName && data.Year === selectedYear);
-                                if (countryData) {
-                                    return colorScale(+countryData.total_deaths);
+                                if (countryData && isFinite(+countryData.total_deaths / +countryData.Population)) {
+                                    const deathRatio = (+countryData.total_deaths / +countryData.Population).toFixed(4);
+
+                                    return d3.interpolateYlGnBu(colorScale(deathRatio));
                                 }
                                 return "none";
                             });
+
                     }
 
                     // Your existing code for the updateMapData function and initial map loading...
                     const button = document.querySelector('#btnSwitch');
                     button.addEventListener('click', function () {
                         console.log("Button clicked!");
-                        const selectedYear = yearSelect.property("value"); // Get the selected year
+                        const selectedYear = yearSlider.property("value") // Get the selected year
                         console.log(selectedYear)
 
                         if (button.innerText === "Choropleth") {
@@ -553,7 +580,7 @@
                     // Render initial map with default data (worldData)
 
 
-                    yearSelect.on("change", updateMap);
+                    yearSlider.on("change", updateMap);
                     // yearSelect.on("change", updateMapData(currentMapData));
                     updateMap(); // Initialize the map with the default year
                     updateMapData(currentMapData);
@@ -594,10 +621,16 @@
                             .attr("height", legendHeight)
                             .style("fill", "url(#vertical-gradient)");
                     }
-
+                    const selectedYear = yearSlider.property("value");
                     // Example color scale
+                    let deathRatios = csvData
+                        .filter(data => data.Year === selectedYear && isFinite(+data.total_deaths / +data.Population))
+                        .map(data => +data.total_deaths / +data.Population);
+
+                    let minDeathRatio = d3.min(deathRatios);
+                    let maxDeathRatio = d3.max(deathRatios);
                     const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-                        .domain([1, 0]); // Set the domain based on your data
+                        .domain([1,0])
 
                     // Call the function to create the vertical color legend
                     createVerticalColorLegend(colorScale);
@@ -727,7 +760,7 @@
                     .attr("class", "y-axis-label")
                     .attr("text-anchor", "middle")
                     .attr("transform", "rotate(-90)")
-                    .attr("fill","steelblue")
+                    .attr("fill", "steelblue")
                     .style("font-weight", "bold")
                     .attr("x", -height / 2)
                     .attr("y", -margin.left + 10) // Adjust the horizontal position of the left y-axis label
@@ -737,7 +770,7 @@
                 svg.append("text")
                     .attr("class", "y-axis-label")
                     .attr("text-anchor", "middle")
-                    .attr("fill","red")
+                    .attr("fill", "red")
                     .style("font-weight", "bold")
                     .attr("transform", `translate(${width + 10 + margin.right / 2}, ${height / 2}) rotate(90)`) // Adjust the position of the right y-axis label
                     .text("GDP (in millions)");
@@ -826,7 +859,7 @@
                     .attr("y", -margin.top + 20)
                     .attr("text-anchor", "middle")
                     .style("font-size", "1.5em")
-                    .attr("font-weight","bold")
+                    .attr("font-weight", "bold")
                     .text(`Causes of deaths in ${countryName}`);
                 //Add bars to the chart
                 const bars = svg.selectAll(".bars")
@@ -1038,6 +1071,8 @@
             });
         }
     </script>
+
+
 </body>
 
 </html>
