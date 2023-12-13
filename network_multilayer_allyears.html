@@ -177,7 +177,7 @@
                 .attr("class", "legend");
 
             // Load data for a specific year
-            d3.json("..\\data\\network_data_multi_layered.json").then(data => {
+            d3.json("network_data_multi_layered.json").then(data => {
                 const filteredData = data.years[year];
                 if (!filteredData) {
                     console.error(`Data not available for year ${year}`);
